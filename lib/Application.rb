@@ -12,6 +12,12 @@ class Application
 
   private
 
+  class Selector
+    def regex node_set, regex
+      node_set.find_all { |node| node.text =~ /#{regex}/ }
+    end
+  end
+  
   def process_command_line(argv)
     
     @opts = OptionParser.new
@@ -31,6 +37,7 @@ class Application
   attr_reader :result  
 
   def initialize(argv)
+    @selector = Application::Selector.new
     @cfg = Hash.new
     @cfg[:case_insensitive] = false
     process_command_line(argv)
@@ -45,7 +52,7 @@ class Application
     
     xml.encoding = @cfg[:encoding] if @cfg[:encoding]
     
-    @result = xml.xpath("//*[contains(text(), '#{@cfg[:string]}')]")
+    @result = xml.xpath("//*[regex(text(), '#{@cfg[:string]}')]", @selector)
   
   end # grep()
 
