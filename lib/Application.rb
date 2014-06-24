@@ -1,33 +1,50 @@
+require 'optparse'
 require 'net/http'
 require 'nokogiri'
 
 class Application
   class InsufficientArguments < Exception
+    attr_reader :usage
+    def initialize(usage)
+      @usage = usage
+    end
   end
 
   private
 
   def process_command_line(argv)
-    raise Application::InsufficientArguments.new() unless argv.count >= 2
-    @string   = argv[0]
-    @url = URI.parse(argv[1])
+    
+    @opts = OptionParser.new
+    @opts.banner = "Usage: rxgrep [options] <string to find> <url to fetch>"
+    @opts.on("-i", "--case-insensitive", "Process input case insensitively") {|val| @cfg[:case_insensitive] = true }
+    @opts.on("-E ENC", "--encoding ENC", String, "Assume content encoding")   {|val| @cfg[:encoding] = val }
+    
+    @opts_rest = @opts.parse(argv)
+    raise Application::InsufficientArguments.new(@opts.to_s) unless @opts_rest.count >= 2
+
+    @cfg[:string] = @cfg[:case_insensitive] ? @opts_rest[0].upcase : @opts_rest[0]
+    @cfg[:url]    = URI.parse(@opts_rest[1])
   end
 
   public
-  attr_accessor :string
-  attr_reader :url
-  attr_reader :result
+  attr_reader :result  
 
   def initialize(argv)
+    @cfg = Hash.new
+    @cfg[:case_insensitive] = false
+
     process_command_line(argv)
   end
 
-  def grep(url = self.url)
-    response = Net::HTTP.get_response(@url)
+  
+  def grep(url = @cfg[:url])
+    
+    response = Net::HTTP.get_response(@cfg[:url])
 
-    xml = Nokogiri::XML(response.body)
-    xml.encoding = 'UTF-8'
-    @result = xml.xpath("//*[contains(text(), '#{string}')]")
-  end
+    xml = Nokogiri::XML(@cfg[:case_insensitive] ? response.body.upcase : response.body)
+    xml.encoding = @cfg[:encoding] if @cfg[:encoding]
+    @result = xml.xpath("//*[contains(text(), '#{@cfg[:string]}')]")
+  
+  end # grep()
 
-end
+end # Application
