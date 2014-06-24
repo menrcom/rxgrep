@@ -26,13 +26,13 @@ class Application
     @cfg[:url]    = URI.parse(@opts_rest[1])
   end
 
+  
   public
   attr_reader :result  
 
   def initialize(argv)
     @cfg = Hash.new
     @cfg[:case_insensitive] = false
-
     process_command_line(argv)
   end
 
@@ -42,7 +42,9 @@ class Application
     response = Net::HTTP.get_response(@cfg[:url])
 
     xml = Nokogiri::XML(@cfg[:case_insensitive] ? response.body.upcase : response.body)
+    
     xml.encoding = @cfg[:encoding] if @cfg[:encoding]
+    
     @result = xml.xpath("//*[contains(text(), '#{@cfg[:string]}')]")
   
   end # grep()
