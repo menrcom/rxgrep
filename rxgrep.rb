@@ -3,21 +3,19 @@
 
 $: << File::dirname(__FILE__) + "/lib"
 
-require 'net/http'
-require 'nokogiri'
+require 'Application'
 
-exit 1 unless ARGV.count == 2
+begin
+  app = Application.new(ARGV)
 
-string   = ARGV[0]
-filename = ARGV[1]
-uri = URI.parse(filename)
+  elements = app.grep
+  
+  puts "Нашёл #{elements.count} элементов:"
+  
+  puts elements.map {|e| "Путь XPath: \"#{e.path}\"\nПуть CSS: \"#{e.css_path}\"\nКодировка: #{e.text.encoding}\nЗначение: \"#{e}\"\n\n"}
 
-response = Net::HTTP.get_response(uri)
-
-xml = Nokogiri::XML(response.body)
-xml.encoding = 'UTF-8'
-elements = xml.xpath("//*[contains(text(), '#{string}')]")
-
-puts "Нашёл #{elements.count} элементов:"
-
-puts elements.map {|e| "Путь XPath:#{e.path}\nпуть CSS:#{e.css_path}\nКодировка:#{e.text.encoding}\nЗначение:#{e}\n\n"}
+rescue Application::InsufficientArguments
+  puts "Usage: #{__FILE__} <string to find> <url to fetch>"
+rescue Exception => e
+  puts "Exception: #{e.class}: #{e}"
+end
