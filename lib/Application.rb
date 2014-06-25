@@ -48,6 +48,8 @@ class Application
     
     response = Net::HTTP.get_response(@cfg[:url])
 
+    # TODO: workaround for response.body.upcase (Net::HTTP doesn't parse Content-Type,
+    #       and assumes ASCII-8BIT encoding for response body)
     xml = Nokogiri::XML(@cfg[:case_insensitive] ? response.body.upcase : response.body)
     
     xml.encoding = @cfg[:encoding] if @cfg[:encoding]
